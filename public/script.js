@@ -16,6 +16,18 @@ navigator.mediaDevices.getUserMedia({
     audio:true
 }).then(stream => {
     addVideoStream(myVideo, stream)
+
+    myPeer.on('call', call => {
+        call.answer(stream)
+        const video = document.createElement('video')
+        call.on('stream', userVideoStream =>{
+            addVideoStream(video, userVideoStream)
+        })
+    })
+
+    socket.on('user-connected', userId => {
+        connectToNewUser(userId, stream)
+    })
 })
 
 myPeer.on('open', id => {
@@ -30,7 +42,19 @@ function addVideoStream(video, stream){
     videoGrid.append(video)
 }
 
+function connectToNewUser(userId, stream) {
+    // we are sending video to the user
+    const call = myPeer.call(userId, stream)
+    // we can the video stream from the other users and passing it to our addVideoStream fn
+    const video = document.createElement('video');
+    call.on('stream', userVideoStream => {
+        addVideoStream(video,userVideoStream)
+    })
+    call.on('close', () => {
+        video.remove();
+    })
+}
 
-socket.on('user-connected', userId => {
-    console.log('user connected:', userId);
-} )
+// socket.on('user-connected', userId => {
+//     console.log('user connected:', userId);
+// } )
